@@ -7,47 +7,136 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100"  />
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="100"/>
-
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="20"/>
-
         </Grid.RowDefinitions>
-        <Grid Grid.Column="0" Grid.Row="1">
-            <StackPanel Background="Gray">
-                <TextBlock Text="Project" TextAlignment="Center" />
-                <Button Content="PCB"/>
-                <Button Content="SCH"/>
-                <Button Content="LIB_PCB"/>
-                <Button Content="LIB_SCH"/>
-                <Button Content="AI"/>
-            </StackPanel>
-        </Grid>
         
-        
-        <Grid Grid.Column="2" Grid.Row="1">
-            
-            <StackPanel Background="Gray">
-                
-               
-
-            </StackPanel>
-        </Grid>
-
-        <Grid Grid.Column="2" Grid.Row="2">
+        <Grid Grid.Row="0">
             <StackPanel Background="Gray" Orientation="Horizontal">
-                <Button Content="PCB" />
-                <Button Content="SCH"/>
+                <Button Content="File"/>
+                <Button Content="Edit"/>
+                <Button Content="View"/>
+                <Button Content="Project"/>
+                <Button Content="Place"/>
+                <Button Content="Design"/>
+                <Button Content="Tools"/>
+
+
+                <DockPanel>
+                    <Menu DockPanel.Dock="Top">
+                        <MenuItem Header="_File">
+                            <MenuItem Header="_New" />
+                            <MenuItem Header="_Open" />
+                            <MenuItem Header="_Save" />
+                            <Separator />
+                            <MenuItem Header="_Exit" />
+                        </MenuItem>
+                    </Menu>
+                    <TextBox AcceptsReturn="True" />
+                </DockPanel>
+
             </StackPanel>
             
         </Grid>
+        
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" MinWidth="100" MaxWidth="350"/>
+                <ColumnDefinition Width="0,5"/>
+                <!-- сплиттер 1 -->
+                <ColumnDefinition Width="*" MinWidth="100"/>
+                <ColumnDefinition Width="0,5"/>
+                <!-- сплиттер 2 -->
+                <ColumnDefinition Width="250" MinWidth="100" MaxWidth="450"/>
+            </Grid.ColumnDefinitions>
 
+
+
+            <!-- Левая панель (было Column=0, Row=1) -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    
+                </Grid.RowDefinitions>
+                <StackPanel Background="Gray">
+                    <TextBlock Text="Project" TextAlignment="Center" />
+                    <Button Content="PCB"/>
+                    <Button Content="SCH"/>
+                    <Button Content="LIB_PCB"/>
+                    <Button Content="LIB_SCH"/>
+                    <Button Content="AI"/>
+                </StackPanel>
+            </Grid>
+
+            
+            <Grid Grid.Column="4" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20" MinHeight="15" MaxHeight="30"/>
+
+                    <!-- сплиттер 1 -->
+                    <RowDefinition Height="*" MinHeight="50"/>
+
+                    <!-- сплиттер 2 -->
+                    <RowDefinition Height="20" MinHeight="15" MaxHeight="30"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Background="Gray">
+                    
+                </TextBlock>
+                <Grid Grid.Row="1" Background="Gray">
+                     
+                    
+                    
+
+                </Grid>
+                <StackPanel Grid.Row="2" Background="Gray" Orientation="Horizontal">
+                    <Button Content="COMPONENTS" FontSize="10" />
+                    <Button Content="PROPERTIES" FontSize="10"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Нижняя панель справа (было Column=2, Row=2) -->
+            <Grid Grid.Column="2" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="20"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0"
+                    Background="Black"
+                     DataContext="{Binding SelectedWorkType}"                      
+                      > 
+                    
+                    
+
+                </Grid>
+                <Grid Grid.Row="1">
+                    <ListBox Background="Gray">
+                        
+                    </ListBox>
+                </Grid>
+
+            </Grid>
+
+            <!-- Вертикальный сплиттер между левой панелью и центром -->
+            <GridSplitter Grid.Column="1"
+          Grid.Row="0" Grid.RowSpan="5"
+          Width="5"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          Background="DarkGray"
+          ResizeBehavior="PreviousAndNext"/>
+
+            <!-- Вертикальный сплиттер между центром и правой частью -->
+            <GridSplitter Grid.Column="3"
+          Grid.Row="0" Grid.RowSpan="5"
+          Width="5"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          Background="DarkGray"
+          ResizeBehavior="PreviousAndNext"/>
 
         </Grid>
+        
+        
+    </Grid>
 </Window>

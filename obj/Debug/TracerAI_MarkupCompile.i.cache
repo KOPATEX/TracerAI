@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-D:\SAPR\test sapr\TracerAI\TracerAI\obj\Debug\
+D:\SAPR\test sapr\Новая папка\TracerAI\obj\Debug\
 TracerAI
 none
 false
 DEBUG;TRACE
-D:\SAPR\test sapr\TracerAI\TracerAI\App.xaml
-21134387416
+D:\SAPR\test sapr\Новая папка\TracerAI\App.xaml
+4-383528084
 
-7-1860281389
-16-1086548286
-Views\MainWindow.xaml;Views\Page_PCB.xaml;
+91433929763
+16199500385
+Views\ComponentPtoperties.xaml;Views\ComponentsList.xaml;Views\MainWindow.xaml;Views\Page_PCB.xaml;
 
-False
+True
 
