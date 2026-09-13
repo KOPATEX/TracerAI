@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using TracerAI.ViewModel;
 
 namespace TracerAI
 {
@@ -23,6 +24,7 @@ namespace TracerAI
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new ViewportViewModel();
         }
 
     }

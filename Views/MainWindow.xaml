@@ -4,8 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TracerAI"
+        xmlns:vm="clr-namespace:TracerAI.ViewModel"
+        xmlns:views="clr-namespace:TracerAI.Views"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
+
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:PcbViewModel}">
+            <views:Page_PCB />
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="20"/>
@@ -60,7 +69,7 @@
                 </Grid.RowDefinitions>
                 <StackPanel Background="Gray">
                     <TextBlock Text="Project" TextAlignment="Center" />
-                    <Button Content="PCB"/>
+                    <Button Content="PCB" Command="{Binding OpenPcbCommand}"/>
                     <Button Content="SCH"/>
                     <Button Content="LIB_PCB"/>
                     <Button Content="LIB_SCH"/>
@@ -102,12 +111,8 @@
                     <RowDefinition Height="20"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0"
-                    Background="Black"
-                     DataContext="{Binding SelectedWorkType}"                      
-                      > 
-                    
-                    
-
+                    Background="Black">
+                    <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
                 </Grid>
                 <Grid Grid.Row="1">
                     <ListBox Background="Gray">
