@@ -11,6 +11,7 @@
                      PaintSurface="OnPaintSurface"
                      MouseMove="OnCanvasMouseMove"
                      MouseDown="OnCanvasMouseDown"
-                     MouseWheel="OnCanvasMouseWheel"/>
+                     MouseWheel="OnCanvasMouseWheel"
+                     Focusable="True"/>
     </Grid>
 </UserControl>

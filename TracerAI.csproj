@@ -95,7 +95,8 @@
     </ApplicationDefinition>
     <Compile Include="Model\GridSettings.cs" />
     <Compile Include="Model\Model.cs" />
-    <Compile Include="ViewModel\MainViewModel.cs" />
+    <Compile Include="Model\PcbElement.cs" />
+    <Compile Include="Model\ToolModel.cs" />
     <Compile Include="ViewModel\PcbViewModel.cs" />
     <Compile Include="ViewModel\ViewportViewModel.cs" />
     <Compile Include="Views\ComponentPtoperties.xaml.cs">
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Librarys\" />

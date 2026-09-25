@@ -1,0 +1,32 @@
+# Сборка
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Rr]elease/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / ReSharper
+.idea/
+*.DotSettings.user
+_ReSharper*/
+
+# NuGet
+packages/
+*.nupkg
+
+# Артефакты
+*.pdb
+*.exe
+*.dll
+*.cache
+
+# ОС
+Thumbs.db
+.DS_Store

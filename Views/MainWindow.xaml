@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:TracerAI"
         xmlns:vm="clr-namespace:TracerAI.ViewModel"
         xmlns:views="clr-namespace:TracerAI.Views"
+        xmlns:model="clr-namespace:TracerAI.Model"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
 
@@ -22,31 +23,38 @@
         </Grid.RowDefinitions>
         
         <Grid Grid.Row="0">
-            <StackPanel Background="Gray" Orientation="Horizontal">
-                <Button Content="File"/>
-                <Button Content="Edit"/>
-                <Button Content="View"/>
-                <Button Content="Project"/>
-                <Button Content="Place"/>
-                <Button Content="Design"/>
-                <Button Content="Tools"/>
+            <Menu Grid.Row="0" Background="#333333" Foreground="Gray">
+                <MenuItem Header="_File">
+                    <MenuItem Header="_New" />
+                    <MenuItem Header="_Open" />
+                    <MenuItem Header="_Save" />
+                    <Separator />
+                    <MenuItem Header="_Exit" />
+                </MenuItem>
 
+                <MenuItem Header="_Edit">
+                    <MenuItem Header="_Track" 
+                  Command="{Binding CurrentViewModel.SelectToolCommand}" 
+                  CommandParameter="{x:Static model:ToolMode.Track}" />
+                    <MenuItem Header="_Rectangle (Board Outline)" 
+                  Command="{Binding CurrentViewModel.SelectToolCommand}" 
+                  CommandParameter="{x:Static model:ToolMode.Rectangle}" />
+                    <MenuItem Header="_Pad" 
+                  Command="{Binding CurrentViewModel.SelectToolCommand}" 
+                  CommandParameter="{x:Static model:ToolMode.Pad}" />
+                    <MenuItem Header="_Circle" 
+                  Command="{Binding CurrentViewModel.SelectToolCommand}" 
+                  CommandParameter="{x:Static model:ToolMode.Circle}" />
+                    <MenuItem Header="_Edit" 
+                  Command="{Binding CurrentViewModel.SelectToolCommand}" 
+                  CommandParameter="{x:Static model:ToolMode.None}" />
+                </MenuItem>
 
-                <DockPanel>
-                    <Menu DockPanel.Dock="Top">
-                        <MenuItem Header="_File">
-                            <MenuItem Header="_New" />
-                            <MenuItem Header="_Open" />
-                            <MenuItem Header="_Save" />
-                            <Separator />
-                            <MenuItem Header="_Exit" />
-                        </MenuItem>
-                    </Menu>
-                    <TextBox AcceptsReturn="True" />
-                </DockPanel>
+                <MenuItem Header="_AI">
+                    <MenuItem Header="_Load Photo" />
+                </MenuItem>
+            </Menu>
 
-            </StackPanel>
-            
         </Grid>
         
         <Grid Grid.Row="1">
