@@ -9,8 +9,11 @@ using TracerAI.Model;
 using TracerAI.ViewModel;
 using System.Windows.Media;
 using System.Numerics;
-//using System.Drawing;
 using System.Windows.Media.TextFormatting;
+using System.Windows.Shapes;
+using System.Windows.Controls.Primitives;
+using System.Xml.Linq;
+using DevExpress.Mvvm.POCO;
 
 namespace TracerAI.Views
 {
@@ -22,7 +25,18 @@ namespace TracerAI.Views
         public Page_PCB()
         {
             InitializeComponent();
-                
+
+            this.DataContextChanged += (s, e) =>
+            {
+                if (ViewModel != null)
+                {
+                    ViewModel.RequestInvalidate = () =>
+                    {
+                        SkiaCanvas.InvalidateVisual();
+                    };
+                }
+            };
+
         }
 
         // 1. Отрисовка
@@ -33,17 +47,8 @@ namespace TracerAI.Views
 
             if (ViewModel == null) return;
 
-            // 1. Сетка
             DrawGrid(canvas, e.Info.Width, e.Info.Height);
-
-            // 2. Начало координат (0,0)
-            DrawOrigin(canvas);
-
-            // 3. Прицел курсора
-            DrawCrosshair(canvas);
-
-            DrawGrid(canvas, e.Info.Width, e.Info.Height);
-            DrawPcbElements(canvas); // <--- Отрисовка элементов платы
+            DrawPcbElements(canvas); // Здесь уже происходит вся отрисовка элементов
             DrawOrigin(canvas);
             DrawCrosshair(canvas);
         }
@@ -66,7 +71,7 @@ namespace TracerAI.Views
 
             while (effectiveStep * pixelsPerWorldUnit < minPixelSpacing)
             {
-                effectiveStep *= 2f; // При сильном отдалении укрупняем шаг сетки (2x, 4x, 8x...)
+                effectiveStep *= 2f; // При сильном отдалении укрупняем шаг сетки 
             }
 
             // 3. Вычисляем границы отображения только для видимого экрана
@@ -106,6 +111,8 @@ namespace TracerAI.Views
         private void DrawCrosshair(SKCanvas canvas)
         {
             // 1. Переменные мировых координат (не зависят от Zoom, в мм/милах)
+            if (ViewModel?.SnappedWorldCursor == null) return;
+
             Point2D worldPos = ViewModel.SnappedWorldCursor;
             float worldX = (float)worldPos.X;
             float worldY = (float)worldPos.Y;
@@ -155,8 +162,13 @@ namespace TracerAI.Views
             }
 
             _lastMousePosition = currentPos;
-            ViewModel.UpdateCursorPosition(currentPos);
+            var pos = e.GetPosition((IInputElement)sender);
+            var screenPoint = new Point2D((float)pos.X, (float)pos.Y);
 
+            ViewModel.UpdateCursorPosition(screenPoint); // у вас уже есть
+            ViewModel.UpdateHoveredElement(screenPoint); // новый вызов
+
+            
             // Логика предпросмотра нарисованной линии
             if (ViewModel.IsDrawing)
             {
@@ -167,12 +179,15 @@ namespace TracerAI.Views
                         ViewModel.DrawingStartPoint,
                         ViewModel.SnappedWorldCursor
                     );
+
                 }
                 else
                 {
                     ViewModel.DrawingPreviewPoint = ViewModel.SnappedWorldCursor;
                 }
+
             }
+
 
             SkiaCanvas.InvalidateVisual();
         }
@@ -258,45 +273,59 @@ namespace TracerAI.Views
         // создание элементов платы 
         private void OnCanvasMouseDown(object sender, MouseButtonEventArgs e)
         {
+            this.Focus();
+            Keyboard.Focus(SkiaCanvas);
+
             _lastMousePosition = GetSkiaMousePosition(e);
             if (ViewModel == null) return;
 
-            // --- Обработка ЛКМ ---
-            if (e.LeftButton == MouseButtonState.Pressed && ViewModel.CurrentTool != ToolMode.None)
+            if (e.LeftButton == MouseButtonState.Pressed)
             {
                 var cursor = ViewModel.SnappedWorldCursor;
 
-                // Если включаем Track — накладываем ограничение 45 градусов от стартовой точки
-                if (ViewModel.CurrentTool == ToolMode.Track && ViewModel.IsDrawing)
+                // 1. Выделение элемента в режиме Edit или None (инструмент не выбран)
+                if (ViewModel.CurrentTool == ToolMode.None || ViewModel.CurrentTool == ToolMode.Edit)
                 {
-                    cursor = ViewModel.SnapTo45Degrees(ViewModel.DrawingStartPoint, cursor);
+                    ViewModel.SelectElementAt(cursor);
+                    SkiaCanvas.InvalidateVisual();
+                    return;
                 }
 
+                // 2. Рисование дорожки Track
                 if (ViewModel.CurrentTool == ToolMode.Track)
                 {
+                    if (ViewModel.IsDrawing)
+                    {
+                        cursor = ViewModel.SnapTo45Degrees(ViewModel.DrawingStartPoint, cursor);
+                    }
+
                     if (!ViewModel.IsDrawing)
                     {
-                        // 1-й клик: Старт цепочки дорожек
                         ViewModel.IsDrawing = true;
                         ViewModel.DrawingStartPoint = cursor;
                         ViewModel.DrawingPreviewPoint = cursor;
                     }
                     else
                     {
-                        // 2-й и последующие клики: сохраняем сегмент и сразу начинаем следующий!
-                        ViewModel.Elements.Add(new PcbTrack
+                        // 🟢 Создаем трек с передачей слоя, ширины и страховкой через индекс
+                        var newTrack = new PcbTrack
                         {
                             Start = ViewModel.DrawingStartPoint,
                             End = cursor,
-                            Width = ViewModel.CurrentTrackWidth
-                        });
+                            Width = ViewModel.CurrentTrackWidth,
+                            Layer = ViewModel.CurrentLayer ?? ViewModel.AvailableLayers[0]
+                        };
 
-                        // Конец этого сегмента становится стартом для следующего
+                        ViewModel.Elements.Add(newTrack);
+
+                        // 🟢 Сразу делаем элемент выбранным, чтобы инспектор отобразил его параметры
+                        ViewModel.SelectedElement = newTrack;
+
                         ViewModel.DrawingStartPoint = cursor;
                         ViewModel.DrawingPreviewPoint = cursor;
                     }
                 }
-                else // Для всех остальных элементов (Прямоугольник, Pad и т.д.)
+                else // 3. Остальные инструменты (Rectangle, Pad, Circle)
                 {
                     if (!ViewModel.IsDrawing)
                     {
@@ -314,10 +343,10 @@ namespace TracerAI.Views
                 SkiaCanvas.InvalidateVisual();
             }
 
-            // --- Завершение цепочки дорожки по ПКМ ---
+            // Завершение по ПКМ
             if (e.RightButton == MouseButtonState.Pressed && ViewModel.IsDrawing)
             {
-                ViewModel.CancelDrawing(); // Прерываем рисование следующего сегмента
+                ViewModel.CancelDrawing();
                 SkiaCanvas.InvalidateVisual();
             }
         }
@@ -325,22 +354,20 @@ namespace TracerAI.Views
         private void DrawPcbElements(SKCanvas canvas)
         {
             if (ViewModel == null || ViewModel.Elements == null) return;
+            DrawBoardOutline(canvas);
 
-            // Стили кистей для готовых элементов
-            
-            using (var rectPaint = new SKPaint { Color = SKColors.Gold, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
-            using (var padPaint = new SKPaint { Color = SKColors.Orange, Style = SKPaintStyle.Fill, IsAntialias = true })
+            // Базовые кисти (цвета будут переопределяться под слой элемента)
+            using (var rectPaint = new SKPaint { Style = SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
+            using (var padPaint = new SKPaint { Style = SKPaintStyle.Fill, IsAntialias = true })
             using (var padHolePaint = new SKPaint { Color = SKColor.Parse("#1A1A1A"), Style = SKPaintStyle.Fill, IsAntialias = true })
-            using (var circlePaint = new SKPaint { Color = SKColors.DeepSkyBlue, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
+            using (var circlePaint = new SKPaint { Style = SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
             using (var trackPaint = new SKPaint
             {
-                Color = SKColors.Red,
                 Style = SKPaintStyle.Stroke,
-                StrokeCap = SKStrokeCap.Round, // Закругленные концы дорожек
-                StrokeJoin = SKStrokeJoin.Round, // Плавные соединения углов
+                StrokeCap = SKStrokeCap.Round,
+                StrokeJoin = SKStrokeJoin.Round,
                 IsAntialias = true
             })
-            // Кисть для фантома (пунктирная линия во время рисования)
             using (var previewPaint = new SKPaint
             {
                 Color = SKColors.White,
@@ -351,20 +378,25 @@ namespace TracerAI.Views
             })
             {
                 // ----------------------------------------------------
-                // А. Отрисовка СОЗДАННЫХ элементов из ViewModel.Elements
+                // А. Отрисовка СОЗДАННЫХ элементов с учетом цвета их слоя
                 // ----------------------------------------------------
                 foreach (var element in ViewModel.Elements)
                 {
+                    // Берем цвет слоя или белый по умолчанию, если слой не назначен
+                    SKColor layerColor = element.Layer?.Color ?? SKColors.White;
+
                     switch (element)
                     {
                         case PcbTrack track:
+                            trackPaint.Color = layerColor;
                             var tStart = ViewModel.WorldToScreen(track.Start);
                             var tEnd = ViewModel.WorldToScreen(track.End);
-                            trackPaint.StrokeWidth = track.Width * ViewModel.Scale; // Масштабируем ширину дорожки
+                            trackPaint.StrokeWidth = track.Width * ViewModel.Scale;
                             canvas.DrawLine((float)tStart.X, (float)tStart.Y, (float)tEnd.X, (float)tEnd.Y, trackPaint);
                             break;
 
                         case PcbRectangle rect:
+                            rectPaint.Color = layerColor;
                             var rStart = ViewModel.WorldToScreen(rect.Start);
                             var rEnd = ViewModel.WorldToScreen(rect.End);
                             float left = (float)Math.Min(rStart.X, rEnd.X);
@@ -375,30 +407,26 @@ namespace TracerAI.Views
                             break;
 
                         case PcbPad pad:
+                            padPaint.Color = layerColor;
                             var padScreen = ViewModel.WorldToScreen(pad.Position);
                             float padSizePx = (float)(pad.Size.X * ViewModel.Scale);
                             float holeSizePx = (float)(pad.HoleSize * ViewModel.Scale);
 
-                            // Площадка
                             canvas.DrawCircle((float)padScreen.X, (float)padScreen.Y, padSizePx / 2f, padPaint);
-                            // Отверстие
                             canvas.DrawCircle((float)padScreen.X, (float)padScreen.Y, holeSizePx / 2f, padHolePaint);
                             break;
 
                         case PcbCircle circle:
+                            circlePaint.Color = layerColor;
                             var cCenter = ViewModel.WorldToScreen(circle.Center);
                             float radiusPx = circle.Radius * ViewModel.Scale;
                             canvas.DrawCircle((float)cCenter.X, (float)cCenter.Y, radiusPx, circlePaint);
                             break;
-
-                        case PcbEditor editor:
-                            break;
-
                     }
                 }
 
                 // ----------------------------------------------------
-                // Б. Отрисовка ФАНТОМА (интерактивный предпросмотр при движении мыши)
+                // Б. Отрисовка ФАНТОМА при создании нового элемента
                 // ----------------------------------------------------
                 if (ViewModel.IsDrawing)
                 {
@@ -427,6 +455,140 @@ namespace TracerAI.Views
                             canvas.DrawCircle((float)pStart.X, (float)pStart.Y, pRadius, previewPaint);
                             break;
                     }
+                }
+            }
+
+            // Подсветка выбранного элемента
+            if (ViewModel.MultiSelectedElements != null && ViewModel.MultiSelectedElements.Count > 0)
+            {
+                using (var selectPaint = new SKPaint
+                {
+                    Color = SKColors.Cyan,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeWidth = 2f,
+                    IsAntialias = true,
+                    PathEffect = SKPathEffect.CreateDash(new float[] { 4, 4 }, 0)
+                })
+                {
+                    foreach (var selectedElement in ViewModel.MultiSelectedElements)
+                    {
+                        switch (selectedElement)
+                        {
+                            case PcbTrack track:
+                                var s1 = ViewModel.WorldToScreen(track.Start);
+                                var s2 = ViewModel.WorldToScreen(track.End);
+                                canvas.DrawLine((float)s1.X, (float)s1.Y, (float)s2.X, (float)s2.Y, selectPaint);
+                                break;
+
+                            case PcbPad pad:
+                                var pPos = ViewModel.WorldToScreen(pad.Position);
+                                float pRad = (pad.Size.X * ViewModel.Scale) / 2f + 4;
+                                canvas.DrawCircle((float)pPos.X, (float)pPos.Y, pRad, selectPaint);
+                                break;
+
+                            case PcbCircle circle:
+                                var cCenter = ViewModel.WorldToScreen(circle.Center);
+                                float cRad = (circle.Radius * ViewModel.Scale) + 3;
+                                canvas.DrawCircle((float)cCenter.X, (float)cCenter.Y, cRad, selectPaint);
+                                break;
+
+                            case PcbRectangle rect:
+                                var r1 = ViewModel.WorldToScreen(rect.Start);
+                                var r2 = ViewModel.WorldToScreen(rect.End);
+                                float l = (float)Math.Min(r1.X, r2.X) - 3;
+                                float t = (float)Math.Min(r1.Y, r2.Y) - 3;
+                                float w = (float)Math.Abs(r2.X - r1.X) + 6;
+                                float h = (float)Math.Abs(r2.Y - r1.Y) + 6;
+                                canvas.DrawRect(l, t, w, h, selectPaint);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.Focus();
+        }
+
+        // Обработка нажатия клавиш на холсте/панели
+        private void UserControl_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (ViewModel == null) return;
+
+            // 1. Удаление по Delete или Backspace
+            if ((e.Key == Key.Delete || e.Key == Key.Back) && ViewModel.SelectedElement != null)
+            {
+                ViewModel.Elements.Remove(ViewModel.SelectedElement);
+                ViewModel.SelectedElement = null;
+                SkiaCanvas.InvalidateVisual();
+                e.Handled = true;
+            }
+
+            // 2. Выделение всех связанных элементов по клавише Tab
+            if (e.Key == Key.Tab && ViewModel.SelectedElement != null)
+            {
+                ViewModel.SelectConnectedElements();
+
+                System.Diagnostics.Debug.WriteLine($"Выделено элементов цепи: {ViewModel.MultiSelectedElements.Count}");
+                SkiaCanvas.InvalidateVisual();
+                e.Handled = true; // Предотвращаем стандартный переход фокуса по Tab
+            }
+
+        }
+
+        private void Page_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (ViewModel == null) return;
+
+            // Проверяем, не вводит ли пользователь текст в поле инспектора в данный момент
+            bool isEditingText = Keyboard.FocusedElement is TextBox;
+
+            // 1. Удаление по Delete или Backspace (только если не редактируем текст)
+            if ((e.Key == Key.Delete || e.Key == Key.Back) && ViewModel.SelectedElement != null && !isEditingText)
+            {
+                ViewModel.Elements.Remove(ViewModel.SelectedElement);
+                ViewModel.SelectedElement = null;
+                SkiaCanvas.InvalidateVisual();
+                e.Handled = true;
+            }
+
+            // 2. Выделение всех связанных элементов по клавише Tab
+            if (e.Key == Key.Tab && ViewModel.SelectedElement != null && !isEditingText)
+            {
+                ViewModel.SelectConnectedElements(); // 🟢 Заполняет MultiSelectedElements всей цепью
+                SkiaCanvas.InvalidateVisual();
+                e.Handled = true; // Предотвращаем стандартный увод фокуса по Tab в WPF
+            }
+        }
+
+        private void DrawBoardOutline(SKCanvas canvas)
+        {
+            if (ViewModel?.BoardContour == null || ViewModel.BoardContour.Count < 3) return;
+
+            using (var path = new SKPath())
+            {
+                var firstPt = ViewModel.WorldToScreen(ViewModel.BoardContour[0]);
+                path.MoveTo((float)firstPt.X, (float)firstPt.Y);
+
+                for (int i = 1; i < ViewModel.BoardContour.Count; i++)
+                {
+                    var pt = ViewModel.WorldToScreen(ViewModel.BoardContour[i]);
+                    path.LineTo((float)pt.X, (float)pt.Y);
+                }
+                path.Close();
+
+                // 1. Заливка тела платы (темно-зеленый текстолит)
+                using (var fillPaint = new SKPaint { Color = SKColor.Parse("#112611"), Style = SKPaintStyle.Fill, IsAntialias = true })
+                {
+                    canvas.DrawPath(path, fillPaint);
+                }
+
+                // 2. Обводка границы платы
+                using (var borderPaint = new SKPaint { Color = SKColors.LimeGreen, Style = SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
+                {
+                    canvas.DrawPath(path, borderPaint);
                 }
             }
         }

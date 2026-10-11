@@ -13,6 +13,7 @@ namespace TracerAI.Model
         Polygon,
         Pad,
         Rectangle,
-        Circle
+        Circle,
+        Edit
     }
 }

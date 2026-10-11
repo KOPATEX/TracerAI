@@ -27,5 +27,9 @@ namespace TracerAI
             DataContext = new ViewportViewModel();
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

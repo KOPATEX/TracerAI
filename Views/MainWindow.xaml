@@ -15,6 +15,9 @@
         <DataTemplate DataType="{x:Type vm:PcbViewModel}">
             <views:Page_PCB />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ComponentPropertiesModel}">
+            <views:ComponentPtoperties />
+        </DataTemplate>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -101,14 +104,15 @@
                     
                 </TextBlock>
                 <Grid Grid.Row="1" Background="Gray">
-                     
+
+                    <ContentControl Content="{Binding CurrentMenuModel}" />
                     
-                    
+
 
                 </Grid>
                 <StackPanel Grid.Row="2" Background="Gray" Orientation="Horizontal">
                     <Button Content="COMPONENTS" FontSize="10" />
-                    <Button Content="PROPERTIES" FontSize="10"/>
+                    <Button Content="PROPERTIES" FontSize="10" Command="{Binding OpenComponentPropertiesCommand}" Click="Button_Click"/>
                 </StackPanel>
             </Grid>
 
@@ -123,7 +127,7 @@
                     <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
                 </Grid>
                 <Grid Grid.Row="1">
-                    <ListBox Background="Gray">
+                    <ListBox Background="Gray" >
                         
                     </ListBox>
                 </Grid>

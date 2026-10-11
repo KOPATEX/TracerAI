@@ -93,10 +93,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Model\GridSettings.cs" />
+    <Compile Include="Model\Point2D.cs" />
+    <Compile Include="Model\Point2DCustom.cs" />
     <Compile Include="Model\Model.cs" />
     <Compile Include="Model\PcbElement.cs" />
     <Compile Include="Model\ToolModel.cs" />
+    <Compile Include="ViewModel\ComponentPropertiesModel.cs" />
     <Compile Include="ViewModel\PcbViewModel.cs" />
     <Compile Include="ViewModel\ViewportViewModel.cs" />
     <Compile Include="Views\ComponentPtoperties.xaml.cs">
